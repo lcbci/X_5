@@ -21,4 +21,4 @@ digital_broadcaster_project/
 │
 ├── main.py                      # 项目入口，整合文案生成、语音合成、数字主播展示
 ├── requirements.txt             # 项目依赖包列表
-└── README.md                    # 项目的说明文档
+└── README.md                    # 项目的说明文档1
