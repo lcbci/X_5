@@ -9,7 +9,6 @@ import json
 
 is_exit = True
 
-
 class Danmu():
     def __init__(self, room_id):
         self.url = 'https://api.live.bilibili.com/xlive/web-room/v1/dM/gethistory'
@@ -21,7 +20,6 @@ class Danmu():
         self.log_file_write = open('danmu.log', mode='a', encoding='utf-8')
         log_file_read = open('danmu.log', mode='r', encoding='utf-8')
         self.log = log_file_read.readlines()
-
     def get_danmu(self):
         time.sleep(1)
         html = requests.post(url=self.url, headers=self.headers, data=self.data).json()
@@ -37,7 +35,6 @@ class Danmu():
                 self.log_file_write.write(msg + '\n')
                 self.log.append(msg + '\n')
         nickname = text = timeline = msg = ''
-
 
 def bilibili(room_id):
     bDanmu = Danmu(room_id)
@@ -97,23 +94,15 @@ def save_danmu_impl(show_prompt=True):
 
         if show_prompt:
             messagebox.showinfo("保存成功", f"弹幕已保存至：{filename}")
-
-
 def save_danmu():
     """手动保存入口函数"""
     save_danmu_impl(show_prompt=True)
-
 
 def auto_save_loop():
     """自动保存循环"""
     if not is_exit:
         save_danmu_impl(show_prompt=False)
         window.after(600000, auto_save_loop)  # 10分钟 = 600000毫秒
-
-
-def author():
-    messagebox.showinfo(title='关于', message='作者：jonssonyan\nGitHub：jonssonyan\n日期：2021年2月4日')
-
 
 window = tkinter.Tk()
 window.title('BiliBli弹幕查看工具')
@@ -143,7 +132,6 @@ e1.pack(side=tkinter.LEFT)
 b3 = tkinter.Button(frame_t, text='保存弹幕', width=10, command=save_danmu, font=('Arial', 10))
 b3.pack(side=tkinter.LEFT)
 
-
 def start_point():
     try:
         room = e1.get()
@@ -163,14 +151,12 @@ def start_point():
     except ValueError:
         messagebox.showinfo(title='警告', message='输入的房间号格式不正确,请再次尝试输入!')
 
-
 def end_point():
     global is_exit
     is_exit = True
     e1.configure(state=tkinter.NORMAL)
     b1.configure(state=tkinter.NORMAL)
     b2.configure(state=tkinter.DISABLED)
-
 
 b1 = tkinter.Button(frame_t, text='开始', width=10, command=start_point, font=('Arial', 10))
 b1.pack(side=tkinter.LEFT)
