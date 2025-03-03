@@ -1,5 +1,9 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, scrolledtext, messagebox
+import openai
+import json
+import re
+import time
 
 
 class TrainingApp(tk.Toplevel):
@@ -117,19 +121,80 @@ class CopywritingFrame(BaseStep):
             except Exception as e:
                 messagebox.showerror("错误", f"文件读取失败：{str(e)}")
 
+            
     def generate_text(self):
+        
+        def save_bracketed_content_to_json(text, filename="output.json"):
+            try:
+                # 使用正则表达式提取 [] 中的内容
+                bracketed_content = re.findall(r'\[(.*?)\]', text)
+                
+                if bracketed_content:
+                    # 将提取的内容保存到字典中
+                    data = {"bracketed_content": bracketed_content}
+                    
+                    # 打开 JSON 文件并写入内容
+                    with open(filename, 'w', encoding='utf-8') as f:
+                        json.dump(data, f, ensure_ascii=False, indent=4)
+                    
+                    print(f"已将内容保存到 {filename}")
+                else:
+                    print("没有找到任何被 [] 括起来的内容。")
+            
+            except Exception as e:
+                print(f"保存内容到 JSON 文件时发生错误: {str(e)}")
         """生成文案"""
         if not self.text_preview.get(1.0, tk.END).strip():
             messagebox.showwarning("警告", "请先上传文本内容")
             return
 
-        # 模拟API调用
-        self.result_area.delete(1.0, tk.END)
-        sample = "这是生成的示例文案..." + self.text_preview.get(1.0, tk.END)
-        self.result_area.insert(tk.END, sample)
-        self.generated = True
-        self.controller.training_data['copywriting'] = sample
-        messagebox.showinfo("完成", "文案生成成功！")
+        # 从文本框中获取内容
+        input_text = self.text_preview.get(1.0, tk.END).strip()
+
+        # 设置 OpenAI API 密钥
+        openai.api_key = 'okpEeej2VMQK8WRU43De430fA8F4425191CaFe0991Ef8575'
+
+        # 设置基础 URL
+        openai.base_url = "http://activity.scnet.cn:61080/v1/"
+
+        try:
+            # 创建完成任务
+            completion = openai.chat.completions.create(
+                model="DeepSeek-R1-Distill-Qwen-32B",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": "假设我是一个带货主播，根据我要卖的商品，生成文案（要求文案开头有'[',结尾有']',方便我识别），我要卖的商品是："+input_text,
+                    },
+                ],
+                stream=True,  # 设置为流式输出
+            )
+            
+            # 清空结果区
+            self.result_area.delete(1.0, tk.END)
+
+            # 逐步处理API返回的数据，直到完成
+            full_text = ""  # 用于存储最终文案内容
+            for chunk in completion:
+                if len(chunk.choices) > 0:
+                    content = chunk.choices[0].delta.content
+                    if content:  # 确保 content 不是空值
+                        full_text += content  # 将内容累积到full_text中
+                        self.result_area.insert(tk.END, content)  # 插入内容
+                        self.result_area.yview(tk.END)  # 自动滚动到最新内容
+                        self.result_area.update()  # 强制更新UI
+
+            # 文案生成成功
+            self.generated = True
+            self.controller.training_data['copywriting'] = input_text
+            save_bracketed_content_to_json(full_text)
+            
+
+
+
+        except Exception as e:
+            print(e)
+            messagebox.showerror("错误", f"生成文案时出错：{str(e)}")
 
     def validate(self):
         if not self.generated:
@@ -298,6 +363,8 @@ class MainApplication(tk.Tk):
             self._training_window = TrainingApp(self)
         else:
             self._training_window.lift()
+
+
 
 
 if __name__ == "__main__":
