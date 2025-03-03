@@ -77,83 +77,66 @@ class BaseStep(ttk.Frame):
         return True
 
 
-class CopywritingFrame(ttk.Frame):
-    """文案生成步骤（完整类代码）"""
-    def __init__(self, master):
-        super().__init__(master)
-        self.current_file = None
+class CopywritingFrame(BaseStep):
+    """文案生成步骤"""
 
-        # 左侧文本编辑区
-        edit_frame = ttk.LabelFrame(self, text="文本编辑")
-        edit_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+    def __init__(self, master, controller):
+        super().__init__(master, controller)
+        self.generated = False
+        self.current_file = None  # 跟踪当前文件路径
 
-        # 工具栏
-        toolbar = ttk.Frame(edit_frame)
-        toolbar.pack(fill=tk.X)
-        ttk.Button(toolbar, text="上传文本", command=self.upload_text).pack(side=tk.LEFT, padx=2)
-        ttk.Button(toolbar, text="保存修改", command=self.save_changes).pack(side=tk.LEFT, padx=2)
+        # 左侧上传区
+        upload_frame = ttk.LabelFrame(self, text="文本上传")
+        upload_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
-        # 带行号的编辑器
-        text_panel = ttk.Frame(edit_frame)
-        text_panel.pack(fill=tk.BOTH, expand=True)
-
-        self.line_numbers = tk.Text(text_panel, width=4, padx=4, state='disabled', bg='#f0f0f0')
-        self.line_numbers.pack(side=tk.LEFT, fill=tk.Y)
-
-        self.text_editor = scrolledtext.ScrolledText(text_panel, wrap=tk.NONE, undo=True)
-        self.text_editor.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-
-        # 绑定事件
-        self.text_editor.bind("<KeyRelease>", self.update_line_numbers)
-        self.text_editor.bind("<MouseWheel>", self.sync_scroll)
+        ttk.Button(upload_frame, text="上传文本文件",
+                   command=self.upload_text).pack(pady=5, fill=tk.X)
+        ttk.Separator(upload_frame).pack(fill=tk.X, pady=5)
+        self.text_preview = scrolledtext.ScrolledText(upload_frame, wrap=tk.WORD, width=30)
+        self.text_preview.pack(fill=tk.BOTH, expand=True)
 
         # 右侧生成区
         generate_frame = ttk.LabelFrame(self, text="文案生成")
         generate_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        ttk.Button(generate_frame, text="生成文案", command=self.generate_text).pack(pady=5)
-        self.result_editor = scrolledtext.ScrolledText(generate_frame, wrap=tk.WORD)
-        self.result_editor.pack(fill=tk.BOTH, expand=True)
-
-        self.update_line_numbers()
+        ttk.Button(generate_frame, text="生成文案",
+                   command=self.generate_text).pack(pady=5, fill=tk.X)
+        self.result_area = scrolledtext.ScrolledText(generate_frame, wrap=tk.WORD)
+        self.result_area.pack(fill=tk.BOTH, expand=True)
 
     def upload_text(self):
-        file_path = filedialog.askopenfilename(filetypes=[("文本文件", "*.txt")])
-        if file_path:
+        """上传文本文件"""
+        filetypes = [("文本文件", "*.txt"), ("所有文件", "*.*")]
+        if path := filedialog.askopenfilename(filetypes=filetypes):
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    self.text_editor.delete(1.0, tk.END)
-                    self.text_editor.insert(tk.END, f.read())
-                    self.current_file = file_path
-                    self.update_line_numbers()
+                with open(path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    self.text_preview.delete(1.0, tk.END)
+                    self.text_preview.insert(tk.END, content)
+                    messagebox.showinfo("上传成功", f"已加载文件：{path.split('/')[-1]}")
             except Exception as e:
                 messagebox.showerror("错误", f"文件读取失败：{str(e)}")
 
-    def save_changes(self):
-        if self.current_file:
-            try:
-                with open(self.current_file, 'w', encoding='utf-8') as f:
-                    f.write(self.text_editor.get(1.0, tk.END))
-                messagebox.showinfo("成功", "修改已保存！")
-            except Exception as e:
-                messagebox.showerror("错误", f"保存失败：{str(e)}")
-        else:
-            messagebox.showwarning("警告", "请先打开文件")
-
     def generate_text(self):
-        """空实现（保留函数框架）"""
-        pass
+        """生成文案"""
+        if not self.text_preview.get(1.0, tk.END).strip():
+            messagebox.showwarning("警告", "请先上传文本内容")
+            return
 
-    def update_line_numbers(self, event=None):
-        lines = self.text_editor.get(1.0, "end-1c").split('\n')
-        self.line_numbers.config(state='normal')
-        self.line_numbers.delete(1.0, tk.END)
-        self.line_numbers.insert(tk.END, '\n'.join(str(i + 1) for i in range(len(lines))))
-        self.line_numbers.config(state='disabled')
+        # 模拟API调用
+        self.result_area.delete(1.0, tk.END)
+        sample = "这是生成的示例文案..." + self.text_preview.get(1.0, tk.END)
+        self.result_area.insert(tk.END, sample)
+        self.generated = True
+        self.controller.training_data['copywriting'] = sample
+        messagebox.showinfo("完成", "文案生成成功！")
 
-    def sync_scroll(self, event):
-        self.text_editor.yview(tk.MOVETO, self.line_numbers.yview()[0])
-        return "break"
+    def validate(self):
+        if not self.generated:
+            messagebox.showwarning("验证失败", "请先生成文案")
+            return False
+        return True
+
 
 class AudioTrainingFrame(BaseStep):
     """声音训练步骤"""
