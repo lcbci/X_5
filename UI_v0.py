@@ -126,8 +126,11 @@ class CopywritingFrame(BaseStep):
         
         def save_bracketed_content_to_json(text, filename="output.json"):
             try:
+                # 删除 <think> 和 </think> 标签之间的内容
+                text_without_think = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+                
                 # 使用正则表达式提取 [] 中的内容
-                bracketed_content = re.findall(r'\[(.*?)\]', text)
+                bracketed_content = re.findall(r'\[(.*?)\]', text_without_think)
                 
                 if bracketed_content:
                     # 将提取的内容保存到字典中
@@ -143,6 +146,7 @@ class CopywritingFrame(BaseStep):
             
             except Exception as e:
                 print(f"保存内容到 JSON 文件时发生错误: {str(e)}")
+        
         """生成文案"""
         if not self.text_preview.get(1.0, tk.END).strip():
             messagebox.showwarning("警告", "请先上传文本内容")
